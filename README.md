@@ -57,3 +57,96 @@ echo "Working on sample  : $name"
 done
 ```
 
+2.Map unmapped reads to contigs signicifant k-mer-realated
+-------------------------------------------------------------
+/kmerGWAS/gwas_test/meta_genome/unmapped_reads_remapping_contigs_3367.sh
+```Bash
+#!/bin/bash
+#$ -cwd
+#$ -j y
+#$ -S /bin/bash
+conda activate py_37_simon
+bowtie2="/data05/bxin/softwares/bowtie2-2.4.4-linux-x86_64/bowtie2"
+DTT_contig="/data05/bxin/kmerGWAS/gwas_test/meta_genome/DTT/needed_contigs_final.fa"
+DTA_contig="/data05/bxin/kmerGWAS/gwas_test/meta_genome/DTA/needed_contigs_final.fa"
+DTS_contig="/data05/bxin/kmerGWAS/gwas_test/meta_genome/DTS/needed_contigs_final.fa"
+EH_contig="/data05/bxin/kmerGWAS/gwas_test/meta_genome/EH/needed_contigs_final.fa"
+KRN_contig="/data05/bxin/kmerGWAS/gwas_test/meta_genome/KRN/needed_contigs_final.fa"
+KT_contig="/data05/bxin/kmerGWAS/gwas_test/meta_genome/KT/needed_contigs_final.fa"
+THREADS="4"
+ 
+for name in `cat ../accessions_id`
+do 
+echo "Working on sample  : $name"
+mkdir /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/mapping_contig/${name}
+$bowtie2 --threads $THREADS --very-sensitive-local -x $DTT_contig -1 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_1.fq.gz -2 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_2.fq.gz |samtools view -bS -q 20 - | samtools sort - -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/mapping_contig/${name}/DTT_remapping.q20.sorted.bam && echo 'DTT mapping finished'
+$bowtie2 --threads $THREADS --very-sensitive-local -x $DTA_contig -1 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_1.fq.gz -2 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_2.fq.gz |samtools view -bS -q 20 - | samtools sort - -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/mapping_contig/${name}/DTA_remapping.q20.sorted.bam && echo 'DTA mapping finished'
+$bowtie2 --threads $THREADS --very-sensitive-local -x $DTS_contig -1 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_1.fq.gz -2 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_2.fq.gz |samtools view -bS -q 20 - | samtools sort - -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/mapping_contig/${name}/DTS_remapping.q20.sorted.bam && echo 'DTS mapping finished'
+$bowtie2 --threads $THREADS --very-sensitive-local -x $EH_contig -1 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_1.fq.gz -2 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_2.fq.gz |samtools view -bS -q 20 - | samtools sort - -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/mapping_contig/${name}/EH_remapping.q20.sorted.bam && echo 'EH mapping finished'
+$bowtie2 --threads $THREADS --very-sensitive-local -x $KRN_contig -1 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_1.fq.gz -2 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_2.fq.gz |samtools view -bS -q 20 - | samtools sort - -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/mapping_contig/${name}/KRN_remapping.q20.sorted.bam && echo 'KRN mapping finished'
+$bowtie2 --threads $THREADS --very-sensitive-local -x $KT_contig -1 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_1.fq.gz -2 /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/unmapped_reads/$name/$name\_unmapped_2.fq.gz |samtools view -bS -q 20 - | samtools sort - -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/3367/mapping_contig/${name}/KT_remapping.q20.sorted.bam && echo 'KT mapping finished'
+done
+```
+
+3.Mutation calling
+------------------------
+In this step, the different genotypes of specific microbiome in maize leaf are identified
+
+#### Step1 all mutation on the contigs
+/kmerGWAS/gwas_test/meta_genome/bcftools_3367.sh
+```Bash
+#!/bin/bash
+#$ -cwd
+#$ -j y
+#$ -S /bin/bash
+conda activate py_37_simon
+KRN_all_bam_list=KRN_3367_bam
+KT_all_bam_list=KT_3367_bam
+DTA_all_bam_list=DTA_3367_bam
+DTS_all_bam_list=DTS_3367_bam
+DTT_all_bam_list=DTT_3367_bam
+EH_all_bam_list=EH_3367_bam
+DTT_contigs="/data05/bxin/kmerGWAS/gwas_test/meta_genome/DTT/needed_contigs_final.fa"
+DTA_contigs="/data05/bxin/kmerGWAS/gwas_test/meta_genome/DTA/needed_contigs_final.fa"
+DTS_contigs="/data05/bxin/kmerGWAS/gwas_test/meta_genome/DTS/needed_contigs_final.fa"
+EH_contigs="/data05/bxin/kmerGWAS/gwas_test/meta_genome/EH/needed_contigs_final.fa"
+KRN_contigs="/data05/bxin/kmerGWAS/gwas_test/meta_genome/KRN/needed_contigs_final.fa"
+KT_contigs="/data05/bxin/kmerGWAS/gwas_test/meta_genome/KT/needed_contigs_final.fa"
+bcftools mpileup --threads 32 -b $KRN_all_bam_list --fasta-ref $KRN_contigs > /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/KRN/KRN.vcf
+bcftools call --threads 32 /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/KRN/KRN.vcf -mv -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/KRN/KRN_variants.vcf
+bcftools mpileup --threads 32 -b $EH_all_bam_list --fasta-ref $EH_contigs > /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/EH/EH.vcf
+bcftools call --threads 32 /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/EH/EH.vcf -mv -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/EH/EH_variants.vcf
+bcftools mpileup --threads 32 -b $KT_all_bam_list --fasta-ref $KT_contigs > /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/KT/KT.vcf
+bcftools call --threads 32 /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/KT/KT.vcf -mv -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/KT/KT_variants.vcf
+bcftools mpileup --threads 32 -b $DTA_all_bam_list --fasta-ref $DTA_contigs > /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTA/DTA.vcf
+bcftools call --threads 32 /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTA/DTA.vcf -mv -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTA/DTA_variants.vcf
+bcftools mpileup --threads 32 -b $DTS_all_bam_list --fasta-ref $DTS_contigs > /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTS/DTS.vcf
+bcftools call --threads 32 /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTS/DTS.vcf -mv -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTS/DTS_variants.vcf
+bcftools mpileup --threads 32 -b $DTT_all_bam_list --fasta-ref $DTT_contigs > /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTT/DTT.vcf
+bcftools call --threads 32 /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTT/DTT.vcf -mv -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTT/DTT_variants.vcf
+```
+#### Step2 filter the mutation we interested
+```Bash
+#!/bin/bash
+#$ -cwd
+#$ -j y
+#$ -S /bin/bash
+ 
+bgzip /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTS/DTS_remapping_variants.vcf
+bgzip /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/EH/EH_remapping_variants.vcf
+bcftools filter -T kmer_region_all_needed /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/EH/EH_remapping_variants.vcf.gz -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/EH/EH_remapping_variants_kmer_region.vcf
+bcftools filter -T kmer_region_all_needed /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTS/DTS_remapping_variants.vcf.gz -o /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTS/DTS_remapping_variants_kmer_region.vcf
+
+conda activate Huang_population
+ 
+cd /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/DTS/
+vcftools --minQ 50 --vcf DTS_remapping_variants_kmer_region.vcf --out DTS_remapping_variants_kmer_region_filter_QUAL.vcf --recode --recode-INFO-all
+cd /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/EH/
+vcftools --minQ 50 --vcf EH_remapping_variants_kmer_region.vcf --out EH_remapping_variants_kmer_region_filter_QUAL.vcf --recode --recode-INFO-all
+
+gatk SelectVariants \
+    -V /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/EH/EH_remapping_variants_kmer_region_filter_QUAL.vcf.recode.vcf \
+    -restrict-alleles-to BIALLELIC \
+    -O /data05/bxin/kmerGWAS/gwas_test/meta_genome/all_accessions_mutation/EH/EH_remapping_variants_kmer_region_filter_QUAL_nomultiallelic.vcf.recode.vcf
+```
+
